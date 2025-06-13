@@ -9,32 +9,35 @@ class GUIBoard:
         self.root = root
         self.cell_size = CELL_SIZE
 
-        self.canvas = tk.Canvas(root, bg="white", scrollregion=(0, 0, 3000, 3000))
-        self.hbar = tk.Scrollbar(root, orient=tk.HORIZONTAL)
-        self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
-        self.hbar.config(command=self.canvas.xview)
-
-        self.vbar = tk.Scrollbar(root, orient=tk.VERTICAL)
-        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.vbar.config(command=self.canvas.yview)
-
+        # Canvas とスクロールバーのセットアップ
+        self.canvas = tk.Canvas(root, bg="white")
+        self.hbar = tk.Scrollbar(root, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        self.vbar = tk.Scrollbar(root, orient=tk.VERTICAL, command=self.canvas.yview)
         self.canvas.config(xscrollcommand=self.hbar.set, yscrollcommand=self.vbar.set)
+
+        self.hbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.vbar.pack(side=tk.RIGHT, fill=tk.Y)
         self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
+        # マップとプレイヤー
         self.map = DynamicMap()
-        # 初期配置タイル（すでに"grass"が置かれている状態）
-        self.turn = 0
-        initial_tile = Tile("grass")
-        self.map.place_tile(0, 0, initial_tile)
-        # 初期状態を描画
-        self.draw()
-
         self.players = [
             Player("Player1", "grass"),
             Player("Player2", "water")
         ]
+        self.turn = 0
 
+        # 初期タイル（grass）を配置して描画
+        initial_tile = Tile("grass")
+        self.map.place_tile(0, 0, initial_tile)
+        self.draw()
+
+        # プレビュー用アイテムID保持リスト
+        self._preview_items = []
+
+        # イベントバインド
         self.canvas.bind("<Button-1>", self.on_click)
+        self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<MouseWheel>", self.on_zoom)  # Windows
         self.canvas.bind("<Button-4>", self.on_zoom)    # Linux scroll up
         self.canvas.bind("<Button-5>", self.on_zoom)    # Linux scroll down
@@ -44,7 +47,8 @@ class GUIBoard:
     def draw(self):
         self.canvas.delete("all")
         coords = list(self.map.cells.keys())
-        # (1) マップにセルが一つもないときは原点(0,0)を扱う
+
+        # マップにセルがない場合は (0,0) のみ
         if coords:
             xs, ys = zip(*coords)
             min_x, max_x = min(xs), max(xs)
@@ -53,35 +57,34 @@ class GUIBoard:
             min_x = min_y = max_x = max_y = 0
 
         cs = self.cell_size
-        pad = 6  # 左右上下にセル2マス分の余白
+        pad = 2  # 余白マージン（セル数）
 
-        # (2) scrollregion を「絶対座標＋マージン」で設定
+        # スクロール領域を絶対座標＋余白で設定
         x0 = (min_x - pad) * cs
         y0 = (min_y - pad) * cs
         x1 = (max_x + 1 + pad) * cs
         y1 = (max_y + 1 + pad) * cs
         self.canvas.config(scrollregion=(x0, y0, x1, y1))
 
-        # (3) 各セルを「絶対座標 x*cs, y*cs」で描画
+        # 各セルを絶対座標で描画
         for (x, y), cell in self.map.cells.items():
             color = CELL_COLORS.get(cell.cell_type, "gray")
             sx = x * cs
             sy = y * cs
-            # セル罫線
             self.canvas.create_rectangle(
                 sx, sy, sx + cs, sy + cs,
                 fill=color, outline="black"
             )
 
-
     def on_click(self, event):
-        cs = self.cell_size
-        # Canvas の座標をそのままセルサイズで割る
+        # クリック位置 → マップ上のセル座標
         x_canv = self.canvas.canvasx(event.x)
         y_canv = self.canvas.canvasy(event.y)
-        gx = int(x_canv // self.cell_size)
-        gy = int(y_canv // self.cell_size)
-        print(gx, gy)
+
+        center_x = int(x_canv // self.cell_size)
+        center_y = int(y_canv // self.cell_size)
+        gx = center_x - Tile.SIZE // 2
+        gy = center_y - Tile.SIZE // 2
 
         player = self.players[self.turn % 2]
         tile = Tile(player.tile_type)
@@ -90,6 +93,37 @@ class GUIBoard:
             self.draw()
         else:
             print("配置できません")
+
+    def on_mouse_move(self, event):
+        # 既存プレビューを消去
+        for item in self._preview_items:
+            self.canvas.delete(item)
+        self._preview_items.clear()
+
+        # マウス位置 → マップ座標
+        x_canv = self.canvas.canvasx(event.x)
+        y_canv = self.canvas.canvasy(event.y)
+        cs = self.cell_size
+        center_x = int(x_canv // cs)
+        center_y = int(y_canv // cs)
+        origin_x = center_x - Tile.SIZE // 2
+        origin_y = center_y - Tile.SIZE // 2
+
+        # プレビュー色とパターン
+        player = self.players[self.turn % 2]
+        base_color = CELL_COLORS.get(player.tile_type, "gray")
+        stipple_pattern = "gray50"
+
+        # 3×3プレビューを描画
+        for dy in range(Tile.SIZE):
+            for dx in range(Tile.SIZE):
+                sx = (origin_x + dx) * cs
+                sy = (origin_y + dy) * cs
+                item = self.canvas.create_rectangle(
+                    sx, sy, sx + cs, sy + cs,
+                    fill=base_color, stipple=stipple_pattern, outline=""
+                )
+                self._preview_items.append(item)
 
     def on_zoom(self, event):
         delta = 1 if event.delta > 0 else -1
