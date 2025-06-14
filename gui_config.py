@@ -1,7 +1,8 @@
 CELL_COLORS = {
     "grass": "green",
     "water": "blue",
-    None: "lightgray"
+    "stone": "lightgray",
+    None: "black"
 }
 
 CELL_SIZE = 30

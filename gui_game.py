@@ -30,6 +30,9 @@ class GUIBoard:
         # 初期タイル（grass）を配置して描画
         initial_tile = Tile("grass")
         self.map.place_tile(0, 0, initial_tile)
+        # “次に置くタイル” のプレビュー用にランダム生成 or Player 固定
+        self.current_preview_tile = Tile()  # None ならランダム。Player 固定なら Tile(player.tile_type)
+
         self.draw()
 
         # プレビュー用アイテムID保持リスト
@@ -85,11 +88,16 @@ class GUIBoard:
         center_y = int(y_canv // self.cell_size)
         gx = center_x - Tile.SIZE // 2
         gy = center_y - Tile.SIZE // 2
-
+        
+        print(gx, gy)
+        
         player = self.players[self.turn % 2]
-        tile = Tile(player.tile_type)
+        # 前のタイル配置が成功したら、次のタイルはランダム構成で生成
+        tile = self.current_preview_tile
         if self.map.place_tile(gx, gy, tile):
             self.turn += 1
+            # 次にプレビューするタイルを更新
+            self.current_preview_tile = Tile()
             self.draw()
         else:
             print("配置できません")
@@ -100,7 +108,7 @@ class GUIBoard:
             self.canvas.delete(item)
         self._preview_items.clear()
 
-        # マウス位置 → マップ座標
+        # Canvas 座標 → セル座標 (中心オフセット済み)
         x_canv = self.canvas.canvasx(event.x)
         y_canv = self.canvas.canvasy(event.y)
         cs = self.cell_size
@@ -109,21 +117,23 @@ class GUIBoard:
         origin_x = center_x - Tile.SIZE // 2
         origin_y = center_y - Tile.SIZE // 2
 
-        # プレビュー色とパターン
-        player = self.players[self.turn % 2]
-        base_color = CELL_COLORS.get(player.tile_type, "gray")
+        # プレビュータイルを参照
+        tile = self.current_preview_tile
         stipple_pattern = "gray50"
 
-        # 3×3プレビューを描画
+        # タイルのセル構成に合わせて描画
         for dy in range(Tile.SIZE):
             for dx in range(Tile.SIZE):
+                cell = tile.get_cell(dx, dy)
+                color = CELL_COLORS.get(cell.cell_type, "gray")
                 sx = (origin_x + dx) * cs
                 sy = (origin_y + dy) * cs
                 item = self.canvas.create_rectangle(
                     sx, sy, sx + cs, sy + cs,
-                    fill=base_color, stipple=stipple_pattern, outline=""
+                    fill=color, stipple=stipple_pattern, outline=""
                 )
                 self._preview_items.append(item)
+
 
     def on_zoom(self, event):
         delta = 1 if event.delta > 0 else -1

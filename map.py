@@ -20,7 +20,7 @@ class DynamicMap:
 
     def is_adjacent_compatible(self, x0, y0, tile):
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        for dy in range(self.tile_size):
+        for dy in range(self.tile_size): 
             for dx in range(self.tile_size):
                 x = x0 + dx
                 y = y0 + dy
@@ -29,7 +29,17 @@ class DynamicMap:
                     ny = y + dy2
                     if (nx, ny) in self.cells:
                         neighbor = self.cells[(nx, ny)]
-                        if neighbor.cell_type != tile.cell_type:
+                        print("neighbor.cell_type")
+                        print(neighbor.cell_type)
+                        print("x,y")
+                        print(x,y)
+                        print("dx,dy")
+                        print(dx,dy)
+                        print("nx,ny")
+                        print(nx,ny)
+
+                        tile_cell = tile.get_cell(dx, dy)
+                        if neighbor.cell_type != tile_cell.cell_type:
                             return False
         return True
 
@@ -38,7 +48,7 @@ class DynamicMap:
 
     def place_tile(self, x0, y0, tile):
         if not self.can_place_tile(x0, y0, tile):
-            print(f"タイル（{tile.cell_type}）を({x0},{y0})に配置できません")
+            print(f"タイルを配置できません")
             return False
         for dy in range(self.tile_size):
             for dx in range(self.tile_size):
