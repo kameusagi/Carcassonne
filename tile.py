@@ -10,7 +10,6 @@ class Tile:
         
         file_path = csv_path
         x_coords,y_coords,types = [],[],[]
-        print(file_path)
 
         with open(file_path, newline="", encoding="utf-8") as fp:
             reader = csv.DictReader(fp)

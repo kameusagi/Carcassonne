@@ -3,7 +3,8 @@ CELL_COLORS = {
     1: "lightblue",
     2: "orange",
     3: "lightgreen",
-    4: "black",
+    4: "yellow",
+    5: "black",
     None: "gray"
 }
 

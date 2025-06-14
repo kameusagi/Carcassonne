@@ -33,8 +33,8 @@ class GUIBoard:
         # TileFactory を初期化（CSV フォルダを指定）
         self.factory = TileFactory("./タイル")
         # 初期タイルを配置して描画
-        initial_tile = self.factory.next_tile()
-        self.map.place_tile(0, 0, initial_tile)
+        initial_tile = self.factory.next_tile(init=True)
+        self.map.place_tile(0, 0, initial_tile, init=True)
         
         # “次に置くタイル” のプレビュー用生成
         self.current_preview_tile = self.factory.next_tile()
@@ -67,7 +67,7 @@ class GUIBoard:
             min_x = min_y = max_x = max_y = 0
 
         cs = self.cell_size
-        pad = 2  # 余白マージン（セル数）
+        pad = 10  # 余白マージン（セル数）
 
         # スクロール領域を絶対座標＋余白で設定
         x0 = (min_x - pad) * cs

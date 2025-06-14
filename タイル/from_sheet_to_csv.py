@@ -1,23 +1,9 @@
-# import pandas as pd
-
-# def save_sheets_as_csv(excel_file_path):
-#     # エクセルファイルを読み込む
-#     xls = pd.ExcelFile(excel_file_path)
-    
-#     # 各シートをCSVファイルとして保存する
-#     for sheet_name in xls.sheet_names:
-#         df = pd.read_excel(xls, sheet_name=sheet_name, header=None)
-#         csv_file_name = f"{sheet_name}.csv"
-#         df.to_csv(csv_file_name, index=False, header=False)
-#         print(f"Saved {csv_file_name}")
-
-# # 使用例
-# excel_file_path = 'タイル検討.xlsx'  # ここにエクセルファイルのパスを指定してください
-# save_sheets_as_csv(excel_file_path)
-
 import pandas as pd
+import os
 
 def process_excel_sheets_to_csv(excel_file_path):
+
+    folder_path = os.path.dirname(excel_file_path)
     # エクセルファイルを読み込む
     xls = pd.ExcelFile(excel_file_path)
     
@@ -42,12 +28,13 @@ def process_excel_sheets_to_csv(excel_file_path):
         result_df = pd.DataFrame(data)
         
         # CSVファイル名を決定
-        csv_file_name = f"{sheet_name}.csv"
+        csv_file_path = os.path.join(folder_path,f"{sheet_name}.csv")
         
         # データフレームをCSVファイルとして保存
-        result_df.to_csv(f"{csv_file_name}", index=False)
-        print(f"Saved {csv_file_name}")
+        result_df.to_csv(f"{csv_file_path}", index=False)
+        print(f"Saved {csv_file_path}")
 
 # 使用例
-excel_file_path = 'タイル検討.xlsx'  # ここにエクセルファイルのパスを指定してください
-process_excel_sheets_to_csv(excel_file_path)
+folder_path = './タイル'  # ここにエクセルファイルのパスを指定してください
+excel_file_name = 'タイル検討.xlsx'  # ここにエクセルファイルのパスを指定してください
+process_excel_sheets_to_csv(os.path.join(folder_path, excel_file_name))
