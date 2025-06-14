@@ -1,7 +1,10 @@
 import tkinter as tk
+import tkinter.messagebox
+
 from map import DynamicMap
 from player import Player
 from tile import Tile
+from TileFactory import TileFactory
 from gui_config import CELL_COLORS, CELL_SIZE, CELL_SIZE_MIN, CELL_SIZE_MAX
 
 class GUIBoard:
@@ -27,11 +30,14 @@ class GUIBoard:
         ]
         self.turn = 0
 
-        # 初期タイル（grass）を配置して描画
-        initial_tile = Tile()
+        # TileFactory を初期化（CSV フォルダを指定）
+        self.factory = TileFactory("./タイル")
+        # 初期タイルを配置して描画
+        initial_tile = self.factory.next_tile()
         self.map.place_tile(0, 0, initial_tile)
-        # “次に置くタイル” のプレビュー用にランダム生成 or Player 固定
-        self.current_preview_tile = Tile()  # None ならランダム。Player 固定なら Tile(player.tile_type)
+        
+        # “次に置くタイル” のプレビュー用生成
+        self.current_preview_tile = self.factory.next_tile()
 
         self.draw()
 
@@ -91,13 +97,17 @@ class GUIBoard:
         
         print(gx, gy)
 
-        player = self.players[self.turn % 2]
-        # 前のタイル配置が成功したら、次のタイルはランダム構成で生成
         tile = self.current_preview_tile
         if self.map.place_tile(gx, gy, tile):
             self.turn += 1
-            # 次にプレビューするタイルを更新
-            self.current_preview_tile = Tile()
+            # 次は factory から新しいタイルを取り出す（もう重複なし）
+            try:
+                self.current_preview_tile = self.factory.next_tile()
+            except RuntimeError:
+                tk.messagebox.showinfo("終了", "タイルがなくなったのでゲームを終了します。")
+                self.root.destroy()  # ウィンドウを閉じてプログラム終了
+                return
+            
             self.draw()
         else:
             print("配置できません")
