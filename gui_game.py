@@ -90,16 +90,15 @@ class GUIBoard:
         # クリック位置 → マップ上のセル座標
         x_canv = self.canvas.canvasx(event.x)
         y_canv = self.canvas.canvasy(event.y)
+        cs = self.cell_size
 
-        center_x = int(x_canv // self.cell_size)
-        center_y = int(y_canv // self.cell_size)
-        gx = center_x - Tile.SIZE // 2
-        gy = center_y - Tile.SIZE // 2
-        
-        print(gx, gy)
+        block_x = int(x_canv // (cs * Tile.SIZE))
+        block_y = int(y_canv // (cs * Tile.SIZE))
+        origin_x = block_x * Tile.SIZE
+        origin_y = block_y * Tile.SIZE
 
         tile = self.current_preview_tile
-        if self.map.place_tile(gx, gy, tile):
+        if self.map.place_tile(origin_x, origin_y, tile):
             self.turn += 1
             # 次は factory から新しいタイルを取り出す（もう重複なし）
             try:
@@ -140,10 +139,13 @@ class GUIBoard:
         x_canv = self.canvas.canvasx(event.x)
         y_canv = self.canvas.canvasy(event.y)
         cs = self.cell_size
-        center_x = int(x_canv // cs)
-        center_y = int(y_canv // cs)
-        origin_x = center_x - Tile.SIZE // 2
-        origin_y = center_y - Tile.SIZE // 2
+        # マウスのキャンバス座標を「タイル1枚(=SIZEセル)」ごとに切り捨て
+        block_x = int(x_canv // (cs * Tile.SIZE))
+        block_y = int(y_canv // (cs * Tile.SIZE))
+
+        # そのブロックの左上セルをタイル原点に
+        origin_x = block_x * Tile.SIZE
+        origin_y = block_y * Tile.SIZE
 
         # プレビュータイルを参照
         tile = self.current_preview_tile
