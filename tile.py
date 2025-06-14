@@ -29,3 +29,18 @@ class Tile:
 
     def get_cell(self, x, y):
         return self.cells[y][x]
+    
+    def rotate(self):
+        """
+        90°右回転（時計回り）してセル配置を更新。
+        self.cells[y][x] を変えていきます。
+        """
+        new_cells = [
+            [None] * Tile.SIZE
+            for _ in range(Tile.SIZE)
+        ]
+        for y in range(Tile.SIZE):
+            for x in range(Tile.SIZE):
+                # old (x,y) → new (y, SIZE-1-x)
+                new_cells[y][x] = self.cells[Tile.SIZE-1-x][y]
+        self.cells = new_cells

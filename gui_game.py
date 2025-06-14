@@ -45,7 +45,8 @@ class GUIBoard:
         self._preview_items = []
 
         # イベントバインド
-        self.canvas.bind("<Button-1>", self.on_click)
+        self.canvas.bind("<Button-1>", self.on_left_click)
+        self.canvas.bind("<Button-3>", self.on_right_click)
         self.canvas.bind("<Motion>", self.on_mouse_move)
         self.canvas.bind("<MouseWheel>", self.on_zoom)  # Windows
         self.canvas.bind("<Button-4>", self.on_zoom)    # Linux scroll up
@@ -85,7 +86,7 @@ class GUIBoard:
                 fill=color, outline="black"
             )
 
-    def on_click(self, event):
+    def on_left_click(self, event):
         # クリック位置 → マップ上のセル座標
         x_canv = self.canvas.canvasx(event.x)
         y_canv = self.canvas.canvasy(event.y)
@@ -111,6 +112,23 @@ class GUIBoard:
             self.draw()
         else:
             print("配置できません")
+
+    def on_right_click(self, event):
+        """
+        プレビュー中のタイルを右回転させて再描画。
+        マウス移動イベントが発生していない場合でも、プレビューを更新します。
+        """
+        # 1) 回転
+        self.current_preview_tile.rotate()
+
+        # 2) 既存プレビューを消去
+        for item in self._preview_items:
+            self.canvas.delete(item)
+        self._preview_items.clear()
+
+        # 3) 現在のマウス位置で再プレビュー
+        #    event.x, event.y を使って on_mouse_move を呼び出し
+        self.on_mouse_move(event)
 
     def on_mouse_move(self, event):
         # 既存プレビューを消去
