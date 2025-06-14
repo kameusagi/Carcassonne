@@ -28,7 +28,7 @@ class GUIBoard:
         self.turn = 0
 
         # 初期タイル（grass）を配置して描画
-        initial_tile = Tile("grass")
+        initial_tile = Tile()
         self.map.place_tile(0, 0, initial_tile)
         # “次に置くタイル” のプレビュー用にランダム生成 or Player 固定
         self.current_preview_tile = Tile()  # None ならランダム。Player 固定なら Tile(player.tile_type)
@@ -90,7 +90,7 @@ class GUIBoard:
         gy = center_y - Tile.SIZE // 2
         
         print(gx, gy)
-        
+
         player = self.players[self.turn % 2]
         # 前のタイル配置が成功したら、次のタイルはランダム構成で生成
         tile = self.current_preview_tile
