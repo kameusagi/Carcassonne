@@ -24,7 +24,7 @@ class TileFactory:
         else:
             # ランダムに一つ選んでリストから削除
             path = random.choice(self.available)
-        print(path)
+        # print(path)
         self.available.remove(path)
         tile = Tile(csv_path=path)
         # ランダムに数回転させる

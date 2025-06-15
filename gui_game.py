@@ -25,10 +25,43 @@ class GUIBoard:
         # マップとプレイヤー
         self.map = DynamicMap()
         self.players = [
-            Player("Player1", "grass"),
-            Player("Player2", "water")
+            Player("Player1"),
+            Player("Player2")
         ]
         self.turn = 0
+        self.current_player = self.players[self.turn % len(self.players)]
+
+        ctrl_frame = tk.Frame(root)
+        ctrl_frame.pack(side=tk.TOP, fill=tk.X)
+
+        self.player_label = tk.Label(
+            ctrl_frame,
+            text=f"Turn: {self.current_player.name}",
+            font=("Arial", 14, "bold")
+        )
+        self.player_label.pack(side=tk.TOP, padx=5, pady=5)
+
+        discard_btn = tk.Button(
+            ctrl_frame,
+            text="タイルを捨てる",
+            command=self.discard_tile
+        )
+        discard_btn.pack(side=tk.TOP, padx=5, pady=5)
+
+        put_meaple_btn = tk.Button(
+            ctrl_frame,
+            text="ミープルを置く",
+            command=self.discard_tile
+        )
+        put_meaple_btn.pack(side=tk.TOP, padx=5, pady=5)
+
+        turn_fin_btn = tk.Button(
+            ctrl_frame,
+            text="ターン終了",
+            command=self.put_meaple
+        )
+        turn_fin_btn.pack(side=tk.TOP, padx=5, pady=5)
+
 
         # TileFactory を初期化（CSV フォルダを指定）
         self.factory = TileFactory("./タイル")
@@ -99,10 +132,14 @@ class GUIBoard:
 
         tile = self.current_preview_tile
         if self.map.place_tile(origin_x, origin_y, tile):
+            print(f"{self.current_player.name}が置いた") 
             self.turn += 1
             # 次は factory から新しいタイルを取り出す（もう重複なし）
             try:
                 self.current_preview_tile = self.factory.next_tile()
+                self.current_player = self.players[self.turn % len(self.players)]
+                self.player_label.config(text=f"Turn: {self.current_player.name}")
+
             except RuntimeError:
                 tk.messagebox.showinfo("終了", "タイルがなくなったのでゲームを終了します。")
                 self.root.destroy()  # ウィンドウを閉じてプログラム終了
@@ -175,8 +212,41 @@ class GUIBoard:
             self.cell_size = new_size
             self.draw()
 
+    def discard_tile(self):
+        """
+        現在のプレビュータイルを捨てて、新しく factory から取得し直す
+        """
+        try:
+            self.current_preview_tile = self.factory.next_tile()
+            print(f"{self.current_player.name} がタイルを捨て、新しいタイルを取得しました。")
+        except RuntimeError:
+            # もうタイルが残っていない場合は終了
+            tk.messagebox.showinfo("終了", "タイルが残っていないのでゲームを終了します。")
+            self.root.destroy()
+            return
+
+        # プレビュー表示を更新
+        self.draw()
+
+    def put_meaple(self):
+        """
+        ミープルを置く
+        """
+        try:
+            self.current_preview_tile = self.factory.next_tile()
+            print(f"{self.current_player.name} がタイルを捨て、新しいタイルを取得しました。")
+        except RuntimeError:
+            # もうタイルが残っていない場合は終了
+            tk.messagebox.showinfo("終了", "タイルが残っていないのでゲームを終了します。")
+            self.root.destroy()
+            return
+
+        # プレビュー表示を更新
+        self.draw()
+
 if __name__ == "__main__":
     root = tk.Tk()
     root.title("タイル配置ゲーム")
+    root.state('zoomed')
     app = GUIBoard(root)
     root.mainloop()

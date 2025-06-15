@@ -4,14 +4,13 @@ from cell import Cell
 class DynamicMap:
     def __init__(self):
         self.cells = {}
-        self.tile_size = Tile.SIZE
 
     def get_cell(self, x, y):
         return self.cells.get((x, y), Cell())
 
     def is_area_empty(self, x0, y0, tile):
-        for dy in range(self.tile_size):
-            for dx in range(self.tile_size):
+        for dy in range(Tile.SIZE):
+            for dx in range(Tile.SIZE):
                 x = x0 + dx
                 y = y0 + dy
                 if (x, y) in self.cells:
@@ -22,8 +21,8 @@ class DynamicMap:
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         has_neighbor = False
 
-        for dy in range(self.tile_size):
-            for dx in range(self.tile_size):
+        for dy in range(Tile.SIZE):
+            for dx in range(Tile.SIZE):
                 gx, gy = x0 + dx, y0 + dy
                 for dx2, dy2 in directions:
                     nx, ny = gx + dx2, gy + dy2
@@ -51,7 +50,7 @@ class DynamicMap:
         if (not self.can_place_tile(x0, y0, tile) and not init):
             print(f"タイルを配置できません")
             return False
-        for dy in range(self.tile_size):
-            for dx in range(self.tile_size):
+        for dy in range(Tile.SIZE):
+            for dx in range(Tile.SIZE):
                 self.cells[(x0 + dx, y0 + dy)] = tile.get_cell(dx, dy)
         return True
