@@ -1,31 +1,32 @@
 class Player:
-    MAX_STOCK_MEAPLE = 8
+    MAX_STOCK_MEAPLE = 10
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, color: str):
         self.name = name
         self.score = 0
+        self.score_sub = 0
+        self.color = color
         self.stock_meaple = Player.MAX_STOCK_MEAPLE
 
     def get_stock_meaple(self):
         return self.stock_meaple
 
-    def add_score(self, score: int):
-        self.score += score
-
     def get_score(self):
         return self.score
 
+    def get_subscore(self):
+        return self.score_sub
+
     def put_meaple(self):
         if self.stock_meaple <= 0:
-            print("メープルのストックがありません。")
+            return False
         else:
             self.stock_meaple -= 1
-            print(f"{self.name}さんがメープルを置きました。")
+            return True
 
     def pull_meaple(self):
         if self.stock_meaple < Player.MAX_STOCK_MEAPLE:
             self.stock_meaple += 1
-            print(f"{self.name}さんがメープルを回収しました。現在のストック: {self.stock_meaple}")
         else:
             print("メープルのストックは最大値に達しています。")
     

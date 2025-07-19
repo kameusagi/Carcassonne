@@ -3,3 +3,6 @@
 
 #workディレクトリ
 /work/
+
+#venvディレクトリ
+/myvenv/

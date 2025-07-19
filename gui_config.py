@@ -1,13 +1,13 @@
 CELL_COLORS = {
-    0: "green",
-    1: "lightblue",
-    2: "orange",
-    3: "lightgreen",
-    4: "yellow",
-    5: "black",
-    None: "gray"
+    "教会"  : "green", #エクセルでは赤色
+    "道"    : "lightblue", 
+    "町"    : "orange", 
+    "草むら": "lightgreen", 
+    "交差点": "yellow", 
+    "境界"  : "black", 
+    "予備"  : "gray" 
 }
 
-CELL_SIZE = 30
+CELL_SIZE = 20
 CELL_SIZE_MIN = 10
-CELL_SIZE_MAX = 100
+CELL_SIZE_MAX = 50

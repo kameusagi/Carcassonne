@@ -6,26 +6,19 @@ from cell import Cell
 
 class Tile:
     SIZE = 5
-    def __init__(self, csv_path=None):
-        
-        file_path = csv_path
-        x_coords,y_coords,types = [],[],[]
+    def __init__(self, cell_info_df, mark, tile_id):
+        self.is_closed = None
+        self.tile_id = tile_id
+        self.mark = mark
+        self.cells = [[None] * Tile.SIZE for _ in range(Tile.SIZE)]
 
-        with open(file_path, newline="", encoding="utf-8") as fp:
-            reader = csv.DictReader(fp)
-            for row in reader:
-                x_coords.append(int(row["x"]))
-                y_coords.append(int(row["y"]))
-                types.append(int(row["category"]))
+        for _, row in cell_info_df.iterrows():
+            cell_type = str(row["category"])
+            x = int(row["x"])
+            y = int(row["y"])
+            self.cells[y][x] = Cell(cell_type, mark, tile_id)
 
-        grid = [[None] * Tile.SIZE for _ in range(Tile.SIZE)]
-        for i in range(Tile.SIZE*Tile.SIZE):
-            x,y = x_coords[i],y_coords[i] 
-            grid[y][x] = types[i]
-
-        self.cells = [[Cell(grid[y][x]) for x in range(Tile.SIZE)] 
-                      for y in range(Tile.SIZE)]
-
+    #タイルに含まれるセルクラスを取得するメソッド
     def get_cell(self, x, y):
         return self.cells[y][x]
     
