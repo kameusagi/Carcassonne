@@ -55,7 +55,6 @@ class DynamicMap:
         judge = (self.is_area_empty(x0, y0) and #タイルが置かれていない
             self.is_adjacent_compatible(x0, y0, tile) #隣接セルとの互換性
         )
-        print(judge,init)
         judge = judge or init
         return judge
 

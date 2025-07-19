@@ -4,6 +4,8 @@ import networkx as nx
 from collections import defaultdict, Counter
 import numpy as np
 import matplotlib.pyplot as plt
+from tkinter import Canvas
+from PIL import Image, ImageTk
 
 from map import DynamicMap
 from player import Player
@@ -16,7 +18,7 @@ class GUIBoard:
         self.root = root
         self.cell_size = CELL_SIZE
         self.tile_size = CELL_SIZE*Tile.SIZE
-        self.meaple_size = self.cell_size*0.4 #0.8倍の半径
+        self.meaple_size = self.cell_size*0.6 #0.6倍
 
         # Canvas とスクロールバーのセットアップ
         self.canvas = tk.Canvas(root, bg="white")
@@ -33,11 +35,15 @@ class GUIBoard:
         self.drag_start_x = None
         self.drag_start_y = None
 
+        self.cell_images_put = []  # クラス内で画像保持用
+        self.images_move_tile = []  # クラス内で画像保持用
+        self.images_move_meaple = []  # クラス内で画像保持用
+
         # マップとプレイヤー
         self.map = DynamicMap()
         self.players = [
-            Player("RED","red"),
-            Player("BLUE","blue"),
+            Player("RED"),
+            Player("BLUE"),
         ]
         self.turn = 0
         self.current_player = self.players[self.turn % len(self.players)]
@@ -105,7 +111,7 @@ class GUIBoard:
         dubug_btn.pack(side=tk.TOP, padx=5, pady=5)
 
         # TileFactory を初期化（CSV フォルダを指定）
-        self.factory = TileFactory("./タイル")
+        self.factory = TileFactory()
         # 初期タイルを配置して描画
         initial_tile = self.factory.next_tile(init=True)
         self.map.place_tile(Tile.SIZE*3, Tile.SIZE*3, initial_tile, init=True)
@@ -134,47 +140,36 @@ class GUIBoard:
     def draw(self):
         self.canvas.delete("all")
         cs = self.cell_size
-        self.meaple_size = self.cell_size*0.4 
+        self.meaple_size = self.cell_size*0.6 
 
         # 各セルを絶対座標で描画
         for (x, y), cell in self.map.cells.items():
-            color = CELL_COLORS.get(cell.cell_type, "gray")
+            png_path = cell.png_path
             sx = x * cs
             sy = y * cs
-            self.canvas.create_rectangle(
-                sx, sy, sx + cs, sy + cs,
-                fill=color, outline="black"
-            )
-        #　タイルの境界線を描画
-        for (x, y), tile in self.map.tiles.items():
-            sx = x * cs
-            sy = y * cs
-            self.canvas.create_rectangle(
-                sx, sy, sx + cs * Tile.SIZE, sy + cs * Tile.SIZE,
-                outline="black", width=2
-            )
-        # タイルのマークを描画
-        for (x, y), tile in self.map.tiles.items():
-            if tile.mark:
-                sx = x * cs + cs * Tile.SIZE / 2
-                sy = y * cs + cs * Tile.SIZE / 2
-                self.canvas.create_text(
-                    sx, sy,
-                    text="★", fill="yellow", font=("Arial", int(self.cell_size))
-                )
+            rotate_count = cell.rotate_count
+            # 画像を読み込み
+            tile_img = Image.open(png_path)
+            # 90度 × rotate_count回転
+            rotated_img = tile_img.rotate(90 * rotate_count, expand=True)
+            # リサイズ（セルサイズに合わせる）
+            resized_img = rotated_img.resize((cs, cs), Image.Resampling.LANCZOS)
+            tile_photo = ImageTk.PhotoImage(resized_img)
+            self.cell_images_put.append(tile_photo)  # 保持しておく
+            self.canvas.create_image(sx, sy, image=tile_photo, anchor="nw")  # 左上基準
 
         # 各ミープルを絶対座標で描画
         for (x, y), player in self.map.meaples.items():
-            color = player.color
             cx = (x +0.5)*cs 
             cy = (y +0.5)*cs
-            r = self.meaple_size
-            self.canvas.create_oval(
-                cx - r, cy - r,
-                cx + r, cy + r,
-                fill=color, outline=""
-            )
-        
+            r = int(self.meaple_size)
+            # 画像を読み込み
+            meaple_img = Image.open(player.meaple_path)
+            # リサイズ（セルサイズに合わせる）
+            resized_img = meaple_img.resize((r, r), Image.Resampling.LANCZOS)
+            meaple_photo = ImageTk.PhotoImage(resized_img)
+            self.cell_images_put.append(meaple_photo)  # 保持しておく
+            self.canvas.create_image(cx, cy, image=meaple_photo, anchor="center")  # 中央基準
 
     def on_left_click(self, event):
         if self.phase == 'tile':
@@ -213,58 +208,65 @@ class GUIBoard:
         self.on_mouse_move(event)
 
     def on_mouse_move(self, event):
-        print(f"Mouse moved to: {event.x}, {event.y}")
         # 既存プレビューを消去
         for item in self._preview_items:
             self.canvas.delete(item)
         self._preview_items.clear()
 
         cs = self.cell_size
-        stipple_pattern = "gray50"
 
         if self.phase == 'tile':
             origin_x, origin_y = self.tile_origin_coords(event.x, event.y)
             tile = self.current_preview_tile
 
-            # タイルのセル構成に合わせて描画
+            if len(self.images_move_tile) == Tile.SIZE * Tile.SIZE:
+                self.images_move_tile = []  # 画像をクリア
+
             for dy in range(Tile.SIZE):
                 for dx in range(Tile.SIZE):
                     cell = tile.get_cell(dx, dy)
-                    color = CELL_COLORS.get(cell.cell_type, "gray")
+                    png_path = cell.png_path
                     sx = (origin_x + dx) * cs
                     sy = (origin_y + dy) * cs
-                    item = self.canvas.create_rectangle(
-                        sx, sy, sx + cs, sy + cs,
-                        fill=color, stipple=stipple_pattern, outline=""
-                    )
-                    self._preview_items.append(item)
-            # タイルのマークを描画
-            if tile.mark:
-                sx = (origin_x + Tile.SIZE / 2) * cs
-                sy = (origin_y + Tile.SIZE / 2) * cs
-                item = self.canvas.create_text(
-                    sx, sy,
-                    text="★", fill="yellow", font=("Arial", int(self.cell_size))
-                )
-                self._preview_items.append(item)
+                    rotate_count = cell.rotate_count
+                    tile_img = Image.open(png_path).convert("RGBA")
+                    rotated_img = tile_img.rotate(90 * rotate_count, expand=True) # 90度 × rotate_count回転
+                    resized_img = rotated_img.resize((cs, cs), Image.Resampling.LANCZOS)
 
+                    # αチャンネルを調整して透明度を変更（例: 128 = 50%）
+                    alpha = 128
+                    r, g, b, a = resized_img.split()
+                    a = a.point(lambda p: alpha)  # 全ピクセルのαを128に
+                    transparent_img = Image.merge("RGBA", (r, g, b, a))
+
+                    # Tkinter用に変換（PhotoImage）
+                    tile_photo = ImageTk.PhotoImage(transparent_img)
+                    self.images_move_tile.append(tile_photo)  # 保持しておく
+                    self.canvas.create_image(sx, sy, image=tile_photo, anchor="nw")  # 左上基準
+            
         elif self.phase == 'meaple':
+            if len(self.images_move_meaple) > 0:
+                self.images_move_meaple = []  # 画像をクリア
             x_canv = self.canvas.canvasx(event.x)
             y_canv = self.canvas.canvasy(event.y)
             cell_x = int(x_canv // cs)
             cell_y = int(y_canv // cs)
             cx = (cell_x +0.5)*cs 
             cy = (cell_y +0.5)*cs
-            r = self.meaple_size
+            r = int(self.meaple_size)
+            meaple_img = Image.open(self.current_player.meaple_path).convert("RGBA")
+            resized_img = meaple_img.resize((r, r), Image.Resampling.LANCZOS)
 
-            color = self.current_player.color
-            item = self.canvas.create_oval(
-                cx - r, cy - r,
-                cx + r, cy + r,
-                fill=color, stipple=stipple_pattern, outline=""
-            )
+            # αチャンネルを調整して透明度を変更（例: 128 = 50%）
+            alpha = 128
+            r, g, b, a = resized_img.split()
+            a = a.point(lambda p: alpha)  # 全ピクセルのαを128に
+            transparent_img = Image.merge("RGBA", (r, g, b, a))
 
-            self._preview_items.append(item) 
+            # Tkinter用に変換（PhotoImage）
+            meaple_photo = ImageTk.PhotoImage(transparent_img)
+            self.images_move_meaple.append(meaple_photo)  # 保持しておく
+            self.canvas.create_image(cx, cy, image=meaple_photo, anchor="center")  # 中央基準
         
         # 今のマウスの位置を保持
         self.drag_start_x = event.x
@@ -478,7 +480,7 @@ class GUIBoard:
                     if player.name == player_name:
                         # 草むらの得点計算
                         # patch_idが同じ草むらの中で、完成した街が面している個数をカウントする機能
-                        player.score_sub += self.todo_make(patch_id)
+                        player.score_sub += self.facing_town(patch_id)
 
             elif cell_type == "教会":
                 for player in self.players:
@@ -502,10 +504,9 @@ class GUIBoard:
         for player in self.players:
             print(f"{player.name} のスコア: {player.score},\
                   サブスコア: {player.score_sub}, メープルストック: {player.stock_meaple}")
-    
-    def todo_make(self,patch_id):
+
+    def facing_town(self, patch_id):
         # patch_idが同じ草むらの中で、完成した街が面している個数をカウントする機能
-        # まずはpatch_idが同じ草むらのセルを取得
         
         G = nx.Graph()
         for (x,y), cell in self.map.cells.items():
