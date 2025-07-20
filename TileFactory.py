@@ -9,7 +9,7 @@ class TileFactory:
     
     def __init__(self):
         self.INIT_TILE = "tile04"  # 初期配置用のタイル名 
-        self.INIT_TILE_ID = 7  # 初期配置用のタイル名 
+        self.INIT_TILE_ID = 2  # 初期配置用のタイル名 
         self.tile_id = 0  # タイルIDの初期値 
         self.folder = TileFactory.folder_path
         self.available = pd.read_csv(os.path.join(TileFactory.folder_path, "全体.csv"), encoding="utf-8-sig")
@@ -28,6 +28,7 @@ class TileFactory:
             tile_info = self.available.sample(n=1).iloc[0]
 
         self.available = self.available[self.available["id"] != tile_info["id"]]
+        self.tile_num = len(self.available)
         folder_path = os.path.join(self.folder, "セル", f"{tile_info['タイル種類']}")
         csv_path = os.path.join(folder_path, "cell_info.csv")
         cell_info_df = pd.read_csv(csv_path, encoding="utf-8")
@@ -35,10 +36,6 @@ class TileFactory:
 
         self.tile_id = self.tile_id + 1
         tile = Tile(cell_info_df, mark, self.tile_id, folder_path)
-        
-        # ランダムに数回転させる
-        for _ in range(random.randint(0, 3)):
-            tile.rotate()
 
         # Tile クラスにファイルパスを渡して生成
         return tile

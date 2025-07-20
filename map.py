@@ -1,4 +1,5 @@
 import networkx as nx
+from gui_config import CELL_SIZE,CELL_SIZE_MIN, CELL_SIZE_MAX
 
 from tile import Tile
 from cell import Cell
@@ -12,6 +13,7 @@ class DynamicMap:
         self.before_tile_place = []
         #　タイルを配置した後に、回収されたミープルを保持するリスト
         self.before_meaples = {}
+        self.cell_size = CELL_SIZE  # セルのサイズ
 
     def get_cell(self, x, y):
         return self.cells.get((x, y), Cell())
@@ -30,7 +32,6 @@ class DynamicMap:
         """
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         has_neighbor = False
-
         for dy in range(Tile.SIZE):
             for dx in range(Tile.SIZE):
                 gx, gy = x0 + dx, y0 + dy
@@ -167,13 +168,21 @@ class DynamicMap:
                 for dy in (-1, 0, 1)
                 if not ((dx == 0 and dy == 0) or (dx == dy)) #中心と対角線上のセルは除外
             ]
+            # タイルの周囲にあるセルが全て存在するかチェック
+            # もし存在しないセルがあれば、タイルは閉じていない
+            self.tiles[(x, y)].is_closed = all(((x + dx, y + dy) in self.tiles) for dx, dy in directions)
 
-            for dx, dy in directions:
-                neighbor = (x + dx, y + dy)
-                if neighbor not in self.tiles.keys(): #周辺のセルが存在しない場合
-                    self.tiles[(x, y)].is_closed = False
-                else:
-                    self.tiles[(x, y)].is_closed = True
+            # index = 1
+            # for dx, dy in directions:
+            #     index += 1
+            #     neighbor = (x + dx, y + dy)
+            #     if neighbor not in self.tiles.keys(): #周辺のタイルが存在しない場合
+            #         self.tiles[(x, y)].is_closed = False
+            #         break
+            #     else:
+            #         print("neighbor",neighbor)
+            # if index == 9:  # 全ての周囲にタイルがある場合
+            #     self.tiles[(x, y)].is_closed = True
 
     #ミープルを自動で回収する機能
     def collect_meaples(self):
@@ -200,3 +209,61 @@ class DynamicMap:
                     del self.meaples[(x, y)]
                     player.pull_meaple()
                 
+    def is_tile_anywhere_placeable(self, current_preview_tile):
+        tile_points = list(self.tiles.keys())
+        
+        neighbors = set()
+
+        # 周辺座標のオフセット（8方向）
+        offsets = [
+            (dx * Tile.SIZE, dy * Tile.SIZE)
+            for dx in (-1, 0, 1)
+            for dy in (-1, 0, 1)
+            if not ((dx == 0 and dy == 0) or # 自分自身を除外
+                    (dx != 0 and dy != 0)  # 対角線方向を除外
+                    )  
+        ]
+        for x, y in tile_points:
+            for dx, dy in offsets:
+                neighbor = (x + dx, y + dy)
+                if neighbor not in self.cells.keys():
+                    neighbors.add(neighbor)
+        
+        for neighbor in neighbors:
+            if self.is_adjacent_compatible(neighbor[0], neighbor[1], current_preview_tile):
+                print("タイルを置ける場所があります")
+                return True
+        print("タイルを置ける場所がありません")
+        return False
+
+    def tile_origin_coords(self, x, y, canvas):
+        """
+        タイルの原点座標を計算するヘルパー関数。
+        (x, y) はタイルの左上セルの座標。
+        """
+        cellx_canv, celly_canv = self.cell_coords(x, y, canvas)
+
+        tile_origin_canvx = int(cellx_canv // Tile.SIZE)* Tile.SIZE
+        tile_origin_canvy = int(celly_canv // Tile.SIZE)* Tile.SIZE
+
+        return (tile_origin_canvx, tile_origin_canvy)
+
+    def cell_coords(self, x, y, canvas):
+        """
+        セルの座標を計算するヘルパー関数。
+        (x, y) はセルの左上の座標。
+        """
+        x_canv = canvas.canvasx(x)
+        y_canv = canvas.canvasy(y)
+        cs = self.cell_size
+
+        cellx_canv = int(x_canv // cs)
+        celly_canv = int(y_canv // cs)
+
+        return (cellx_canv, celly_canv)
+
+    def adjust_zoom(self, direction):
+        new_size = self.cell_size + direction * 5
+        if CELL_SIZE_MIN <= new_size <= CELL_SIZE_MAX:
+            self.cell_size = new_size
+            self.tile_size = self.cell_size*Tile.SIZE

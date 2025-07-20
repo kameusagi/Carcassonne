@@ -3,13 +3,12 @@ import os
 class Player:
     MAX_STOCK_MEAPLE = 10
 
-    # def __init__(self, name: str, color: str):
-    def __init__(self, name: str):
+    def __init__(self, name: str, color: str):
         self.name = name
         self.score = 0
         self.score_sub = 0
-        # self.color = color
-        self.meaple_path = os.path.join("./ミープル", name + ".jpg")
+        self.color = color
+        self.meaple_path = os.path.join("./ミープル", color + ".jpg")
         self.stock_meaple = Player.MAX_STOCK_MEAPLE
 
     def get_stock_meaple(self):
